@@ -142,7 +142,7 @@ def process_rule(rule, rule_dict):
 
 cap = 100
 
-def create_combinations_0_queue(rules, messages, longest = 100):
+def create_combinations_0_queue(rules, longest = 100):
 
     from collections import deque
 
@@ -156,37 +156,18 @@ def create_combinations_0_queue(rules, messages, longest = 100):
             rule_dict[num] = definition.split(' ')
 #    print('rules', rule_dict)
     rules = deque()
-    rules_depot=[]
     rules.append(rule_dict[first_rule])
     print('starting with rule0', rules)
     messcount = 0
     count=0
     done = [] #will hold all combinations that have been played out
-    while len(rules)>0 or len(rules_depot)>0:
-        if len(rules)==0:
-#            print("getting a few from depot")
-            for _ in range(cap):
-                rules.append(rules_depot.pop())
+    while len(rules)>0:
+ 
         count+=1
         if count % 1000000 == 0:
 
-            print("\nin count", len(rules), len(rules_depot))
-            if len(rules) > 100000 + cap:
-                for _ in range(len(rules) - cap):
-                   rules_depot.append(rules.popleft())
-            
-                print("\nafter reshuffle", len(rules), len(rules_depot))
-            print("num done", len(done))
-#            print("all rules", len(allrules))
-#            print(len(rule))
-#            print(rule)
+            print("\nin count", len(rules))
 
-            for mess in messages:
-                if mess in done: 
-                    messcount+=1
-                    messages.remove(mess)
-            done = []
-            print("Part 2: ", messcount)
 
         rule = rules.pop()
         new_rules = process_rule(rule, rule_dict)
@@ -248,7 +229,7 @@ def part2():
 
     #find longest message
     longest = len(max(messages, key=len))
-    combos = create_combinations_0_queue(rules, messages, longest)
+    combos = create_combinations_0_queue(rules, longest)
 
     count = 0
     for mess in messages:
@@ -257,8 +238,8 @@ def part2():
     print("Part 2: ", count)
 
 def day19():
-    #part1()
-    part2()
+    part1()
+    #part2()
 
 
 
@@ -266,5 +247,5 @@ def day19():
 
 
 if __name__ == "__main__":
-#    run_tests()
+    run_tests()
     day19()
