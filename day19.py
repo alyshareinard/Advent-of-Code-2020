@@ -1,44 +1,30 @@
 import numpy as np
 import math
 
-def read_data():
-    with open("day19.txt") as f:
+def read_data(filename):
+    with open(filename) as f:
         rules_messages = f.read().split('\n\n')
     rules = rules_messages[0].split("\n")
     messages = rules_messages[1].split("\n")
-    messages = messages[:-1]
-    return (rules, messages)
-
-
-def read_data_part2():
-    with open("day19_part2.txt") as f:
-        rules_messages = f.read().split('\n\n')
-    rules = rules_messages[0].split("\n")
-    messages = rules_messages[1].split("\n")
-    messages = messages[:-1]
     return (rules, messages)
 
 def reduce_ors(rule):
     rule1 = []
     rule2 = []
-    #just do first or
-#    print("rule in or", rule)
+
     first = True
     for item in rule:
-#        print("item in or", item)
+
         if '|' in item  and item != '|' and first == True:
             split = item.index('|')
-#            print("split", split)
-#            print(item[:split])
-#            print(item[split+1:])
+
             rule1 = rule1 + item[:split]
             rule2 = rule2 + item[split+1:]
             first = False
         else:
             rule1.append(item)
             rule2.append(item)
-#    print("rule1", rule1)
-#    print("rule2", rule2)
+
     return(rule1, rule2)
 
 
@@ -54,16 +40,13 @@ def isdone(rule):
 def process_rule(rule, rule_dict):
     from itertools import chain
     if '|' in chain(*rule):
-#    if '|' in rule:
         (rule1, rule2) = reduce_ors(rule)
         return([rule1, rule2])
     else:
         new_rule = []
         for item in rule:
-#            print("ITEMS", item)
             if item.isnumeric(): 
                 insert = rule_dict[item]
-#                print("insert", insert)
                 if '|' in insert or type(insert) == str:
                     new_rule.append(rule_dict[item])
                 else:
@@ -85,46 +68,96 @@ def make_rulesdict(rules):
             rule_dict[num] = definition.split(' ')
     return(rule_dict)
 
-def create_combinations(rule_dict, first_rule = '0', longest = 100):
+def create_combinations(rule_dict, first_rule = '0'):
 
     from collections import deque
 
-
-#    print('rules', rule_dict)
-    print("first_rule", first_rule)
     rules = deque()
     if '|' in rule_dict[first_rule]:
-        print("first one has an or")
         rules.append([rule_dict[first_rule]])
     else:
-        print("no or to see here")
         rules.append(rule_dict[first_rule])
 
-    print('starting with rule0', rules)
-    messcount = 0
-    count=0
     done = [] #will hold all combinations that have been played out
     while len(rules)>0:
- 
-        count+=1
-        if count % 1000000 == 0:
-
-            print("\nin count", len(rules), len(done))
-
-
         rule = rules.pop()
 
         new_rules = process_rule(rule, rule_dict)
         for new_rule in new_rules:
             if isdone(new_rule):# and new_rule not in done:
                 done.append(''.join(new_rule))
-            elif len(new_rule)<longest:# and new_rule not in allrules:
+            else:
                 rules.insert(0, new_rule)
 
     return done
 
 
+def part1(filename):
+    (rules, messages) = read_data(filename)
+
+    rule_dict = make_rulesdict(rules)
+    combos = create_combinations(rule_dict)
+
+    count = 0
+    for mess in messages:
+        if mess in combos: 
+            count+=1
+    return(count)
+
+def check_message(mess, combos_42, combos_31):
+
+    seg_length = len(combos_42[0])
+    num_segs = int(len(mess)/seg_length)
+    count_42 = 0
+    count_31 = 0
+
+    #check that first and second segment is in combos_42
+    for i in range(2):
+        segment = mess[i*seg_length:(i+1)*seg_length]
+        if segment not in combos_42:
+            return False
+    count_42 = 2
+    i=2
+    #allow for more in 42, keep count
+    while mess[i*seg_length:(i+1)*seg_length] in combos_42:
+        count_42+=1
+        i+=1
+    
+    #now check 31s
+    while mess[i*seg_length:(i+1)*seg_length] in combos_31:
+        count_31+=1
+        i+=1
+
+    if i < num_segs:
+        return False
+
+    if (count_31 > 0) and (count_31 < count_42):
+
+        return True
+
+    return False
+
+
+def part2(filename):
+
+    (rules, messages) = read_data(filename)
+    
+    rule_dict = make_rulesdict(rules)
+    #all rules lead to 42 and 31
+    combos_42 = create_combinations(rule_dict, first_rule = '42')
+    combos_31 = create_combinations(rule_dict, first_rule = '31')
+
+    matches = []
+
+    for mess in messages:
+        if check_message(mess, combos_42, combos_31):
+            matches.append(mess)
+
+    return(matches)
+      
+
 def run_tests():
+
     rules = [
         '0: 4 1 5',
         '1: 2 3 | 3 2',
@@ -141,7 +174,6 @@ def run_tests():
         'aaabbb',
         'aaaabbb',
     ]
-
     rule_dict = make_rulesdict(rules)
     combos = create_combinations(rule_dict)
 
@@ -149,90 +181,17 @@ def run_tests():
     for mess in messages:
         if mess in combos: 
             count+=1
-    assert(count == 2)
-
-def part1():
-    (rules, messages) = read_data()
-
-    rule_dict = make_rulesdict(rules)
-    combos = create_combinations(rule_dict)
-
-    count = 0
-    for mess in messages:
-        if mess in combos: 
-            count+=1
-    print("Part 1: ", count)
-
-def part2():
-#    (rules, messages) = read_data_part2()
-    (rules, messages) = read_data()
-    
-    rule_dict = make_rulesdict(rules)
-
-    combos_42 = create_combinations(rule_dict, first_rule = '42')
-    combos_31 = create_combinations(rule_dict, first_rule = '31')
-
-    #create markers for rule 8 and 11
+    assert(count==2)
+    assert(part1("day19_test.txt") == 3)
+    assert(len(part2("day19_test.txt")) == 12)
 
 
-#    temp = rule_dict['8']
-#    print("TESTING TMP", temp+['e'])
-#    rule_dict['8'] = rule_dict['8'] + ['e']
-
-#    print("TESTING", rule_dict['8'])
-#    rule_dict['11'] =  rule_dict['11'] + ['f']
-    
-#    combos = create_combinations(rule_dict)
-
-    #find longest message
-    longest = len(max(messages, key=len))
-    print("now doing combos")
-    count = 0
-
-    combos = ['ef']
-    done = []
-
-
-    for rule42 in combos_42:
-        for rule31 in combos_31:
-            for i in range(1, 10):
-                for j in range(1, 10):
-#                    print(i, j, rule42, rule31)
-#                    print(i*rule42 + j*rule42 + j*rule31)
-                    done.append(i*rule42 + j*rule42 + j*rule31)
-#            print(len(done[-1]))
-
-
-    print(len(done))
-    for i in range(100):
-        print(done[i])
-    print("now checking combos")
-
-
-
-#    combos = create_combinations(rules, longest)
-    messages.append('abbbabbaabbbabbababaaaab')
-    count = 0
-    for mess in messages:
-        print('mess', mess)
-        print('done', done[0])
-        if mess in done: 
-
-            count+=1
-            print("found one")
-    print("Part 2: ", count)
 
 def day19():
-#    part1()
-    part2()
-
-
-
-
-
-
+    print("Part 1: ", part1("day19.txt"))
+    print("Part 2: ", len(part2("day19.txt")))
 
 
 if __name__ == "__main__":
-#    run_tests()
+    run_tests()
     day19()
